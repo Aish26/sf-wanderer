@@ -1,1 +1,1 @@
-# tripadv_scraping
+# Trip Advisor Scraping the contents of the restaurants
