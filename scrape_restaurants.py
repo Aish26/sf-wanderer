@@ -15,6 +15,7 @@ import os
 import re
 tqdm.pandas()
 import pymongo
+import plotly.express as px
 from urllib.parse import quote
 import requests
 client = pymongo.MongoClient("mongodb://localhost:27017/")
@@ -243,6 +244,26 @@ def extract_geo_location(access_key):
         except:
             continue
 
+def show_viz():
+    proj_db = client["trip_adv_proj"]
+    tripadv_col = proj_db["trip_adv_rest_final"]
+    df = pd.DataFrame(list(tripadv_col.find()))
+    df[['latitude', 'longitude','unwanted']] = df['geo_location'].apply(pd.Series)
+    df.drop(columns='unwanted',inplace=True)
+    fig = px.scatter_mapbox(df, 
+                        lat="latitude", 
+                        lon="longitude", 
+                        hover_name="restaurant_name", 
+                        hover_data=["rank","restaurant_rating", "restaurant_reviews_count","cuisine"],
+                        zoom=8, 
+                        height=800,
+                        width=800)
+
+    fig.update_layout(mapbox_style="open-street-map")
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    fig.write_html("rest_view.html")
+
+
 if __name__ == "__main__":
     driver =  search_func(search_location = "San Francisco",search_type = "Restaurants")
     restaurants_extract(driver)
@@ -250,3 +271,4 @@ if __name__ == "__main__":
     rest_collection_cleaned()
     insert_new_extract()
     extract_geo_location(access_key='')
+    show_viz()
