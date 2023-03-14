@@ -27,6 +27,17 @@ from urllib.parse import quote
 import os
 import requests
 
+#Importing libraries
+from bs4 import BeautifulSoup
+import requests
+import json
+import pymongo 
+import pandas as pd
+import plotly.express as px
+from urllib.parse import quote
+from pymongo import MongoClient, GEOSPHERE
+import numpy as np
+
 #global variables to store hotel informations
 hotel_name=[]
 Rating=[]
@@ -535,38 +546,13 @@ class restaurants_extraction():
         
         #self.show_viz()
 
-if __name__ == '__main__':
-    ### Hotels
-    getHotels.get_search_results()
-    getHotels.get_hotel_pages()
-    getHotels.extract_hotel_details()    
-    getHotels.insert_into_hotel_collection()
-    getHotels.extract_geo_location()
-    getHotels.create_index()
-    getHotels.show_viz()
 
-    ### Restaurants
-    restaurants_extraction.main_func()
-
-
-    
-
-#Importing libraries
-from bs4 import BeautifulSoup
-import requests
-import json
-import pymongo 
-import pandas as pd
-import plotly.express as px
-from urllib.parse import quote
-from pymongo import MongoClient, GEOSPHERE
-import numpy as np
 
 
 class tourist_attraction:
 
         #Function to save files to disk
-        def saveString(html, filename):
+        def saveString(self,html, filename):
                 try:
                     file = open(filename,"w",encoding='utf-8')
                     file.write(str(html))
@@ -577,7 +563,7 @@ class tourist_attraction:
 
         #Scrape travel advisor to save first 10 pages to the disk
 
-        def save_pages():
+        def save_pages(self):
             counter=1
             for i in range(0,300,30):
                 part1="https://www.tripadvisor.com/Attractions-g60713-Activities-oa"
@@ -586,7 +572,7 @@ class tourist_attraction:
                 header={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'}
                 page1 = requests.get(URL,headers=header)
                 doc1 = BeautifulSoup(page1.text, 'lxml')
-                saveString(doc1,"sf_attraction"+str(counter)+".html")
+                self.saveString(doc1,"sf_attraction"+str(counter)+".html")
                 counter+=1
 
 
@@ -597,12 +583,12 @@ class tourist_attraction:
 
 
         #Nested dictionary to access and save details of the attractions in the dictionary 
-        def tourist_attractions():
+        def tourist_attractions(self):
             dict={}
             a=0
 
             for counter in range(1,11):
-                file_html=loadString("sf_attraction"+str(counter)+".html")
+                file_html=self.loadString("sf_attraction"+str(counter)+".html")
                 doc1 = BeautifulSoup(file_html, 'lxml')
 
                 for in_counter in range(0,30):
@@ -621,25 +607,22 @@ class tourist_attraction:
                     dict[str(number)]["Image"]=image
 
 
-        # In[577]:
-
-
         #Download pages using URL from dictionary and save in disk
-        def individual_pages():
+        def individual_pages(self):
             for i in range(1,301):
                 URL=dict[i]['URL']
                 header={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'}
                 page1 = requests.get(URL,headers=header)
                 doc1 = BeautifulSoup(page1.text, 'lxml')
-                saveString(doc1,"sf_place"+str(i)+".html")
+                self.saveString(doc1,"sf_place"+str(i)+".html")
                 i+=1
                 
 
 
         #Access each of the individual pages to get description
-        def access_each_page():
+        def access_each_page(self):
             for counter in range(1,301):
-                file_html=loadString("sf_place"+str(counter)+".html")
+                file_html=self.loadString("sf_place"+str(counter)+".html")
                 doc1 = BeautifulSoup(file_html, 'lxml')
                 description=(doc1.findAll("div",attrs={"class":"kUaIL"})[2].find("div",attrs={"class":"fIrGe _T bgMZj"}).text)
                 try:
@@ -660,7 +643,7 @@ class tourist_attraction:
         #Positionstack
         #Access position stack with access key to store latitude and longitude for all stores address
 
-        def get_location():
+        def get_location(self):
             url = "http://api.positionstack.com/v1/forward";
             header={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'}
             
@@ -695,7 +678,7 @@ class tourist_attraction:
 
 
         #Write a review site
-        def get_review_site():
+        def get_review_site(self):
             for counter in range(1,301):
                 file_html=loadString("sf_place"+str(counter)+".html")
                 doc1 = BeautifulSoup(file_html, 'lxml')
@@ -706,7 +689,7 @@ class tourist_attraction:
 
 
         #Get reviews
-        def get_review():
+        def get_review(self):
             for counter in range(1,301):
                 file_html=loadString("sf_place"+str(counter)+".html")
                 doc1 = BeautifulSoup(file_html, 'lxml')
@@ -728,7 +711,7 @@ class tourist_attraction:
 
 
         #Push the dictionary to mongodb
-        def push_data():
+        def push_data(self):
             #Loading mongodb client
         #     client=pymongo.MongoClient()
             client = MongoClient('mongodb+srv://vjmandekar:WG6zfdo0f0GD8mi3@ddrcluster.vnnxiy3.mongodb.net/?retryWrites=true&w=majority')
@@ -746,7 +729,7 @@ class tourist_attraction:
 
         #Processing points to gather latitude and longitude
 
-        def plot_viz():
+        def plot_viz(self):
             a=pd.DataFrame.from_dict(dict)
             a=a.transpose()
             a=a.drop(['_id'])
@@ -773,23 +756,37 @@ class tourist_attraction:
 
 
 
-        def main():
-                saveString()
-                loadString()
-                save_pages()
-                tourist_attractions()
-                individual_pages()
-                access_each_page()
-                get_location()
-                get_review_site()
-                get_review()
-                push_data()
-                plot_viz()
+        def main(self):
+            self.saveString()
+            self.loadString()
+            self.save_pages()
+            self.tourist_attractions()
+            self.individual_pages()
+            self.access_each_page()
+            self.get_location()
+            self.get_review_site()
+            self.get_review()
+            self.push_data()
+            self.plot_viz()
 
 
-                
+
 if __name__ == '__main__':
-tourist_attraction.main()
+    ### Hotels
+    getHotels.get_search_results()
+    getHotels.get_hotel_pages()
+    getHotels.extract_hotel_details()    
+    getHotels.insert_into_hotel_collection()
+    getHotels.extract_geo_location()
+    getHotels.create_index()
+    getHotels.show_viz()
+
+    ### Restaurants
+    restaurants_extraction.main_func()
+
+    ### Tourist Attractions
+    tourist_attraction.main()
+
 
 
 
