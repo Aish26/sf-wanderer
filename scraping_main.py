@@ -28,15 +28,9 @@ import os
 import requests
 
 #Importing libraries
-from bs4 import BeautifulSoup
-import requests
 import json
-import pymongo 
-import pandas as pd
-import plotly.express as px
-from urllib.parse import quote
-from pymongo import MongoClient, GEOSPHERE
 import numpy as np
+
 
 #global variables to store hotel informations
 hotel_name=[]
