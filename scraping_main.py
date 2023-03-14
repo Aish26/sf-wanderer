@@ -207,7 +207,7 @@ class getHotels:
                         long = geo_dict['longitude']
                         hotels_col.update_one(
                             {'_id': hotel_dict['_id']},
-                            {'$set': {'geo_location': {'Type':'Point','Coordinates': [lat,long]}}}
+                            {'$set': {'geo_location': {'type':'Point','coordinates': [long,lat]}}}
                         )
         
                         time.sleep(5)
