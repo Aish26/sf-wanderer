@@ -243,7 +243,12 @@ class getHotels:
         fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
         fig.write_html("HotelView.html")
         
-        
+    def find_nearby():
+        hotels_col = getHotels.get_collection()
+        hotels =hotels_col.find({'geo_location':{'$nearSphere':{'$geometry':{'type':'point','coordinates':[-122.274993,37.788543]},'$maxDistance':5000}}})
+        for i in hotels:
+            print(i['HotelName'])
+            
                
                 
 if __name__ == '__main__':
