@@ -549,6 +549,253 @@ if __name__ == '__main__':
     restaurants_extraction.main_func()
 
 
+    
+
+#Importing libraries
+from bs4 import BeautifulSoup
+import requests
+import json
+import pymongo 
+import pandas as pd
+import plotly.express as px
+from urllib.parse import quote
+from pymongo import MongoClient, GEOSPHERE
+import numpy as np
+
+
+class tourist_attraction:
+
+        #Function to save files to disk
+        def saveString(html, filename):
+                try:
+                    file = open(filename,"w",encoding='utf-8')
+                    file.write(str(html))
+                    file.close()
+                except Exception as ex:
+                    print('Error: ' + str(ex))
+
+
+        #Scrape travel advisor to save first 10 pages to the disk
+
+        def save_pages():
+            counter=1
+            for i in range(0,300,30):
+                part1="https://www.tripadvisor.com/Attractions-g60713-Activities-oa"
+                part2="-San_Francisco_California.html"
+                URL = part1+str(i)+part2
+                header={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'}
+                page1 = requests.get(URL,headers=header)
+                doc1 = BeautifulSoup(page1.text, 'lxml')
+                saveString(doc1,"sf_attraction"+str(counter)+".html")
+                counter+=1
+
+
+        #Function to load the saved pages
+        def loadString(f):
+            html = open(f, "r").read()
+            return(html)
+
+
+        #Nested dictionary to access and save details of the attractions in the dictionary 
+        def tourist_attractions():
+            dict={}
+            a=0
+
+            for counter in range(1,11):
+                file_html=loadString("sf_attraction"+str(counter)+".html")
+                doc1 = BeautifulSoup(file_html, 'lxml')
+
+                for in_counter in range(0,30):
+                    number=a+1
+                    url='https://www.tripadvisor.com'+doc1.findAll("div",attrs={"class":"alPVI eNNhq PgLKC tnGGX"})[in_counter].find("a").get("href")
+                    ta_rating=doc1.findAll("svg",attrs={"class":"UctUV d H0 hzzSG"})[in_counter].get('aria-label')
+                    num_reviews=doc1.findAll("span",attrs={"class":"biGQs _P pZUbB osNWb"})[in_counter].text
+                    image=doc1.findAll("div",attrs={"class":"BqDzz z"})[in_counter].find("li",attrs={"class":"CyFNY _A MBoCH"}).find('img').get('src')
+
+                    dict[str(number)]={}
+                    a+=1
+                    dict[str(number)]["Name"]=doc1.findAll("div",attrs={"class":"XfVdV o AIbhI"})[in_counter].contents[3].text
+                    dict[str(number)]["URL"]=url
+                    dict[str(number)]["TA Rating"]=ta_rating
+                    dict[str(number)]["Num Reviews"]=num_reviews
+                    dict[str(number)]["Image"]=image
+
+
+        # In[577]:
+
+
+        #Download pages using URL from dictionary and save in disk
+        def individual_pages():
+            for i in range(1,301):
+                URL=dict[i]['URL']
+                header={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'}
+                page1 = requests.get(URL,headers=header)
+                doc1 = BeautifulSoup(page1.text, 'lxml')
+                saveString(doc1,"sf_place"+str(i)+".html")
+                i+=1
+                
+
+
+        #Access each of the individual pages to get description
+        def access_each_page():
+            for counter in range(1,301):
+                file_html=loadString("sf_place"+str(counter)+".html")
+                doc1 = BeautifulSoup(file_html, 'lxml')
+                description=(doc1.findAll("div",attrs={"class":"kUaIL"})[2].find("div",attrs={"class":"fIrGe _T bgMZj"}).text)
+                try:
+                    admission_cost=(doc1.findAll("div",attrs={"class":"biGQs _P fiohW uuBRH"})[0].text)
+                except:
+                    admission_cost="NA"
+                try:
+                    loc_address=doc1.findAll("div",attrs={"class":"MJ"})[1].find("span",attrs={"class":"biGQs _P XWJSj Wb"}).text
+                except:
+                    loc_address="NA"
+
+                dict[str(counter)]["Description"]=description
+                dict[str(counter)]["Admission Cost"]=admission_cost
+                dict[str(counter)]["Address"]=loc_address
+            
+
+
+        #Positionstack
+        #Access position stack with access key to store latitude and longitude for all stores address
+
+        def get_location():
+            url = "http://api.positionstack.com/v1/forward";
+            header={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'}
+            
+            for i in range(1,301):
+                check=0
+                while check<5:
+                    page = requests.get(url,headers=header,params={
+                        'access_key': 'b6292ec7f59847b423d31cbb9f5a4e68',
+                        'query': dict[str(i)]['Address'],
+                        'region': 'United States',
+                        'limit': 1,
+                        })
+
+                    doc = BeautifulSoup(page.content, 'html.parser')
+                    geo=[]
+
+                    try:
+                        json_dict = json.loads(str(doc))
+                        geo.append(json_dict['data'][0]['longitude'])
+                    except:
+                        geo.append('NA')
+
+                    try:
+                        json_dict = json.loads(str(doc))
+                        geo.append(json_dict['data'][0]['latitude'])
+                        check=5
+                    except:
+                        geo.append('NA')
+                        check+=1
+
+                dict[str(i)]["Geolocation"]=geo
+
+
+        #Write a review site
+        def get_review_site():
+            for counter in range(1,301):
+                file_html=loadString("sf_place"+str(counter)+".html")
+                doc1 = BeautifulSoup(file_html, 'lxml')
+                write_review=(doc1.findAll("div",attrs={"class":"WoBiw"})[0].find("a",attrs={"class":"UikNM _G B- _S _T c G_ P0 wSSLS wnNQG"}).get('href'))
+
+                dict[str(counter)]["Write Review"]=write_review
+
+
+
+        #Get reviews
+        def get_review():
+            for counter in range(1,301):
+                file_html=loadString("sf_place"+str(counter)+".html")
+                doc1 = BeautifulSoup(file_html, 'lxml')
+                dict[str(counter)]['Review']={}
+
+                for i in range(0,3):
+                    try:
+                        review_title=(doc1.findAll("div",attrs={"class":"MyksB _R Ra"})[i].contents[2].text)
+                    except:
+                        review_title='NA'  
+                    try:
+                        review=(doc1.findAll("div",attrs={"class":"MyksB _R Ra"})[i].contents[3].text)
+                    except:
+                        review='NA'    
+                    dict[str(counter)]['Review'][str(i+1)]={}
+                    dict[str(counter)]['Review'][str(i+1)]['Title']=review_title
+                    dict[str(counter)]["Review"][str(i+1)]["Review"]=review
+
+
+
+        #Push the dictionary to mongodb
+        def push_data():
+            #Loading mongodb client
+        #     client=pymongo.MongoClient()
+            client = MongoClient('mongodb+srv://vjmandekar:WG6zfdo0f0GD8mi3@ddrcluster.vnnxiy3.mongodb.net/?retryWrites=true&w=majority')
+
+
+            #Creating a new mongodb collection
+            db=client.get_database("Travelogue")
+        #   db.create_collection("sf_tourist_attraction")
+
+            #Get the collection
+            tourist_collection=db.get_collection("sf_tourist_attraction")
+            tourist_collection.insert_one(dict)
+
+
+
+        #Processing points to gather latitude and longitude
+
+        def plot_viz():
+            a=pd.DataFrame.from_dict(dict)
+            a=a.transpose()
+            a=a.drop(['_id'])
+            # replace 'NA' with NaN in column 
+            a['Geolocation'] = a['Geolocation'].apply(lambda x: [np.nan if val == 'NA' else val for val in x])
+            a = a[~a['Geolocation'].apply(lambda x: all(pd.isnull(x)))]
+            a[['Longitude', 'Latitude']] = a['Geolocation'].apply(lambda x: pd.Series(x))
+
+            a['Longitude'] = a['Longitude'].astype(float)
+            a['Latitude'] = a['Latitude'].astype(float)
+
+            fig = px.scatter_mapbox(a, 
+                                lat='Latitude', 
+                                lon='Longitude', 
+                                hover_name='Name', 
+                                hover_data=["Description","TA Rating",""],
+                                zoom=8, 
+                                height=800,
+                                width=800)
+
+            fig.update_layout(mapbox_style="open-street-map")
+            fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+            fig.write_html("rest_view.html")
+
+
+
+        def main():
+                saveString()
+                loadString()
+                save_pages()
+                tourist_attractions()
+                individual_pages()
+                access_each_page()
+                get_location()
+                get_review_site()
+                get_review()
+                push_data()
+                plot_viz()
+
+
+                
+if __name__ == '__main__':
+tourist_attraction.main()
+
+
+
+
+
+
 
 
 
