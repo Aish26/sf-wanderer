@@ -263,6 +263,40 @@ def show_viz():
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     fig.write_html("rest_view.html")
 
+def transform_col():
+    rest_db = client["trip_adv_proj"]
+    rest_collection = rest_db["trip_adv_rest_final"]
+
+    query = {}
+    update = { 
+    "$set": {
+        "location": {
+            "type": "Point",
+            "coordinates": [
+                "$geo_location.longitude",
+                "$geo_location.latitude"
+            ]
+        }
+    },
+    "$unset": {
+        "geo_location": ""
+    }
+}
+
+def update_geo_location():
+    rest_db = client["trip_adv_proj"]
+    rest_collection = rest_db["final_trip_adv_rest"]
+    for doc in rest_collection.find({}):
+        if 'geo_location' in doc:
+            lat = doc['geo_location']['latitude']
+            lng = doc['geo_location']['longitude']
+            point = {'type': 'Point', 'coordinates': [lng, lat]}
+            rest_collection.update_one({'_id': doc['_id']}, {'$set': {'geo_location': point}})
+
+    rest_collection.create_index([('geo_location', pymongo.GEOSPHERE)])
+
+
+
 
 if __name__ == "__main__":
     driver =  search_func(search_location = "San Francisco",search_type = "Restaurants")
@@ -272,3 +306,4 @@ if __name__ == "__main__":
     insert_new_extract()
     extract_geo_location(access_key='')
     show_viz()
+    update_geo_location()
