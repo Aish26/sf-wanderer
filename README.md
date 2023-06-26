@@ -1,4 +1,4 @@
-# Trip Advisor Scraping the contents of the restaurants
+# SF Wanderer
 
 ### Executive Summary
 This project aims at creating a database of tourist activities, restaurants, and hotels in San Francisco. The websites Travel Advisor and Hotels.com have been scraped to collect the details of the top 300 destinations, 3801 restaurants and 500 hotels in San Francisco. In the end, it would be leveraged to find the nearest restaurant based on your current destination (vice-versa) and distance to your hotel.
